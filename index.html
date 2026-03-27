@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ToDoリスト</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='4' fill='%23212121'/><rect x='6' y='4' width='20' height='24' rx='2' fill='%231e2a3a' stroke='%233b82f6' stroke-width='1.5'/><rect x='11' y='2' width='10' height='5' rx='2' fill='%233b82f6'/><line x1='10' y1='13' x2='22' y2='13' stroke='%2360a5fa' stroke-width='1.5' stroke-linecap='round'/><line x1='10' y1='17' x2='22' y2='17' stroke='%2360a5fa' stroke-width='1.5' stroke-linecap='round'/><line x1='10' y1='21' x2='18' y2='21' stroke='%2360a5fa' stroke-width='1.5' stroke-linecap='round'/></svg>">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #212121; font-family: 'Hiragino Sans', 'Meiryo', sans-serif; min-height: 100vh; padding: 20px; color: #e2e8f0; }
+  .container { max-width: 480px; margin: 0 auto; }
+  h1 { font-size: 1.3rem; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: #f1f5f9; }
+  .badge { background: #1e3a5f; color: #93c5fd; font-size: 0.72rem; padding: 2px 10px; border-radius: 99px; margin-left: auto; }
+
+  .input-card { background: #1e2a3a; border-bottom: 4px solid #2563eb; border-radius: 4px; padding: 16px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+  .input-card input, .input-card select {
+    width: 100%; background: #162032; border: 1px solid #2d4a6a; border-radius: 6px;
+    padding: 7px 10px; margin-bottom: 8px; font-size: 0.85rem; outline: none;
+    color: #e2e8f0; font-family: inherit; transition: border-color 0.2s;
+  }
+  .input-card input:focus, .input-card select:focus { border-color: #3b82f6; }
+  .input-card input::placeholder { color: #4a6a8a; }
+  .input-card input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(60%) sepia(60%) saturate(400%) hue-rotate(190deg); cursor: pointer; }
+  .input-card select option { background: #1e2a3a; }
+  .row { display: flex; gap: 8px; }
+  .row input, .row select { flex: 1; }
+  .btn-add { flex: 1; background: #2563eb; color: white; border: none; border-radius: 6px; padding: 8px; font-size: 0.85rem; font-weight: bold; cursor: pointer; font-family: inherit; transition: background 0.2s; }
+  .btn-add:hover { background: #1d4ed8; }
+  .btn-cancel { flex: 0 0 auto; background: transparent; border: 1px solid #2563eb; color: #93c5fd; border-radius: 6px; padding: 8px 12px; font-size: 0.8rem; cursor: pointer; font-family: inherit; }
+  .btn-cancel:hover { background: #1e3a5f; }
+
+  .filters { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+  .filters button { background: #1e2a3a; color: #94a3b8; border: 1px solid #2d4a6a; border-radius: 99px; padding: 4px 12px; font-size: 0.72rem; font-weight: bold; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+  .filters button.active { background: #2563eb; color: white; border-color: #2563eb; }
+  .filters button:hover:not(.active) { background: #243447; }
+
+  .tasks { display: flex; flex-direction: column; gap: 10px; }
+  .card { border-radius: 4px; padding: 12px; cursor: grab; transition: transform 0.15s, box-shadow 0.15s; border-left: 4px solid transparent; }
+  .card:active { cursor: grabbing; }
+  .card.even { transform: rotate(-0.3deg); }
+  .card.odd  { transform: rotate(0.3deg); }
+  .card.dragging { opacity: 0.3; }
+  .card.drag-over { transform: scale(1.03) !important; box-shadow: 0 0 0 2px #3b82f6; }
+  .card.done-card { opacity: 0.4; }
+  .card-todo       { background: #1a2a3a; border-left-color: #3b82f6; box-shadow: 2px 2px 10px rgba(0,0,0,0.3); }
+  .card-inprogress { background: #2a2518; border-left-color: #f59e0b; box-shadow: 2px 2px 10px rgba(0,0,0,0.3); }
+  .card-done-style { background: #1a2a1f; border-left-color: #22c55e; box-shadow: 2px 2px 10px rgba(0,0,0,0.3); }
+
+  .card-inner { display: flex; align-items: flex-start; gap: 10px; }
+  .status-btn { width: 22px; height: 22px; border-radius: 50%; border: 2px solid; flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; margin-top: 2px; transition: all 0.2s; background: transparent; }
+  .status-todo       { border-color: #3b82f6; color: #3b82f6; }
+  .status-inprogress { border-color: #f59e0b; color: #f59e0b; background: rgba(245,158,11,0.1); }
+  .status-done       { border-color: #22c55e; color: #22c55e; background: rgba(34,197,94,0.15); }
+
+  .card-body { flex: 1; min-width: 0; }
+  .card-title { font-size: 0.88rem; font-weight: bold; color: #f1f5f9; line-height: 1.4; }
+  .card-title.done { text-decoration: line-through; color: #64748b; }
+  .card-link { font-size: 0.73rem; color: #3b82f6; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; text-decoration: none; display: block; }
+  .card-link:hover { text-decoration: underline; color: #60a5fa; }
+  .card-meta { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; align-items: center; }
+  .status-badge { font-size: 0.68rem; padding: 1px 8px; border-radius: 99px; font-weight: bold; }
+  .sb-todo       { background: #1e3a5f; color: #93c5fd; }
+  .sb-inprogress { background: #451a03; color: #fcd34d; }
+  .sb-done       { background: #14532d; color: #86efac; }
+  .pri { font-size: 0.68rem; padding: 1px 8px; border-radius: 99px; color: white; font-weight: bold; }
+  .pri-high { background: #dc2626; }
+  .pri-mid  { background: #ca8a04; }
+  .pri-low  { background: #16a34a; }
+  .due { font-size: 0.73rem; color: #64748b; }
+  .due .cal-icon { color: #60a5fa; font-style: normal; }
+  .due.overdue  { color: #f87171; font-weight: bold; }
+  .due.today    { color: #fb923c; font-weight: bold; }
+  .due.tomorrow { color: #fbbf24; }
+
+  .card-actions { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
+  .btn-icon { background: none; border: none; cursor: pointer; width: 22px; height: 22px; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 0.8rem; transition: background 0.2s, color 0.2s; padding: 0; }
+  .btn-icon:hover { background: rgba(255,255,255,0.05); color: #94a3b8; }
+  .btn-copy svg, .btn-link-btn svg, .btn-del svg { width: 13px; height: 13px; }
+  .btn-copy:hover  { background: rgba(96,165,250,0.15); color: #60a5fa; }
+  .btn-copy.copied { color: #22c55e !important; }
+  .btn-link-btn:hover { background: rgba(96,165,250,0.15); color: #60a5fa; }
+  .btn-del:hover  { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+  .backup-bar { display: flex; gap: 8px; margin-top: 16px; }
+  .btn-backup { flex: 1; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer; font-family: inherit; border: 1px solid; transition: all 0.2s; }
+  .btn-export { background: #1e2a3a; color: #60a5fa; border-color: #2d4a6a; }
+  .btn-export:hover { background: #243447; }
+  .btn-import { background: #1e2a3a; color: #86efac; border-color: #1f4a30; }
+  .btn-import:hover { background: #1a3025; }
+  #file-input { display: none; }
+
+  .empty { text-align: center; color: #475569; padding: 48px 0; font-size: 0.9rem; }
+
+  /* Pomodoro */
+  .pomodoro { background: #1e2a3a; border: 1px solid #2d4a6a; border-radius: 8px; padding: 14px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px; }
+  .pomo-time { font-size: 1.6rem; font-weight: bold; font-variant-numeric: tabular-nums; color: #f1f5f9; min-width: 72px; }
+  .pomo-time.running { color: #60a5fa; }
+  .pomo-time.finished { color: #22c55e; }
+  .pomo-label { font-size: 0.72rem; color: #64748b; margin-top: 2px; }
+  .pomo-btns { display: flex; gap: 6px; margin-left: auto; }
+  .btn-pomo { border: none; border-radius: 6px; padding: 6px 14px; font-size: 0.8rem; font-weight: bold; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+  .btn-pomo-start { background: #2563eb; color: white; }
+  .btn-pomo-start:hover { background: #1d4ed8; }
+  .btn-pomo-stop { background: #374151; color: #94a3b8; }
+  .btn-pomo-stop:hover { background: #4b5563; color: #e2e8f0; }
+  .pomo-ring { width: 44px; height: 44px; flex-shrink: 0; }
+  .pomo-ring circle { transition: stroke-dashoffset 1s linear; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #212121; }
+  ::-webkit-scrollbar-thumb { background: #3f3f60; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>ToDoリスト <span class="badge" id="badge">0件</span></h1>
+
+  <div class="pomodoro">
+    <svg class="pomo-ring" viewBox="0 0 44 44">
+      <circle cx="22" cy="22" r="18" fill="none" stroke="#1e3a5f" stroke-width="4"/>
+      <circle id="pomo-arc" cx="22" cy="22" r="18" fill="none" stroke="#2563eb" stroke-width="4"
+        stroke-linecap="round" stroke-dasharray="113" stroke-dashoffset="0"
+        transform="rotate(-90 22 22)"/>
+    </svg>
+    <div>
+      <div class="pomo-time" id="pomo-display">30:00</div>
+      <div class="pomo-label" id="pomo-label">集中タイマー</div>
+    </div>
+    <div class="pomo-btns">
+      <button class="btn-pomo btn-pomo-start" id="btn-pomo-start" onclick="pomoStart()">▶ 開始</button>
+      <button class="btn-pomo btn-pomo-stop" id="btn-pomo-stop" onclick="pomoReset()" style="display:none">■ リセット</button>
+    </div>
+  </div>
+
+  <div class="input-card">
+    <input type="text" id="inp-title" placeholder="タスクを入力..." />
+    <input type="url" id="inp-note" placeholder="URL（任意）" />
+    <div class="row">
+      <select id="inp-status">
+        <option value="todo">📋 未着手</option>
+        <option value="inprogress">⚡ 処理中</option>
+        <option value="done">✅ 完了</option>
+      </select>
+      <select id="inp-pri">
+        <option>高</option><option selected>中</option><option>低</option>
+      </select>
+    </div>
+    <div class="row" style="margin-bottom:8px">
+      <input type="date" id="inp-due" />
+    </div>
+    <div class="row">
+      <button class="btn-add" id="btn-submit" onclick="addOrUpdate()">＋ 追加</button>
+      <button class="btn-cancel" id="btn-cancel" style="display:none" onclick="cancelEdit()">取消</button>
+    </div>
+  </div>
+
+  <div class="filters">
+    <button class="active" onclick="setFilter('all',this)">すべて <span id="cnt-all">0</span></button>
+    <button onclick="setFilter('todo',this)">📋 未着手 <span id="cnt-todo">0</span></button>
+    <button onclick="setFilter('inprogress',this)">⚡ 処理中 <span id="cnt-inprogress">0</span></button>
+    <button onclick="setFilter('done',this)">✅ 完了 <span id="cnt-done">0</span></button>
+  </div>
+
+  <div class="tasks" id="tasks"></div>
+
+  <div class="backup-bar">
+    <button class="btn-backup btn-export" onclick="exportJSON()">⬇ Export</button>
+    <button class="btn-backup btn-import" onclick="document.getElementById('file-input').click()">⬆ Import</button>
+    <input type="file" id="file-input" accept=".json" onchange="importJSON(event)">
+  </div>
+</div>
+
+<script>
+let tasks = JSON.parse(localStorage.getItem('dark-todo-v2') || '[]');
+let filter = 'all';
+let editId = null;
+let dragId = null;
+
+const STATUS_ORDER = ['todo','inprogress','done'];
+const STATUS_NEXT  = { todo:'inprogress', inprogress:'done', done:'todo' };
+const STATUS_LABEL = { todo:'📋 未着手', inprogress:'⚡ 処理中', done:'✅ 完了' };
+const STATUS_ICON  = { todo:'', inprogress:'▶', done:'✓' };
+
+function save() { localStorage.setItem('dark-todo-v2', JSON.stringify(tasks)); render(); }
+
+function addOrUpdate() {
+  const title = document.getElementById('inp-title').value.trim();
+  if (!title) return;
+  const status = document.getElementById('inp-status').value;
+  const pri    = document.getElementById('inp-pri').value;
+  const due    = document.getElementById('inp-due').value;
+  const note   = document.getElementById('inp-note').value.trim();
+  if (editId) {
+    tasks = tasks.map(t => t.id == editId ? {...t, title, status, pri, due, note} : t);
+    cancelEdit();
+  } else {
+    tasks.unshift({ id: Date.now(), title, status, pri, due, note });
+    ['inp-title','inp-note','inp-due'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('inp-pri').value = '中';
+    document.getElementById('inp-status').value = 'todo';
+  }
+  save();
+}
+
+function cancelEdit() {
+  editId = null;
+  document.getElementById('btn-submit').textContent = '＋ 追加';
+  document.getElementById('btn-cancel').style.display = 'none';
+  ['inp-title','inp-note','inp-due'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('inp-pri').value = '中';
+  document.getElementById('inp-status').value = 'todo';
+}
+
+function startEdit(id) {
+  const t = tasks.find(t => t.id == id); if (!t) return;
+  editId = id;
+  document.getElementById('inp-title').value  = t.title;
+  document.getElementById('inp-note').value   = t.note || '';
+  document.getElementById('inp-pri').value    = t.pri;
+  document.getElementById('inp-due').value    = t.due || '';
+  document.getElementById('inp-status').value = t.status || 'todo';
+  document.getElementById('btn-submit').textContent = '✏️ 更新';
+  document.getElementById('btn-cancel').style.display = '';
+  document.getElementById('inp-title').focus();
+}
+
+function cycleStatus(id) {
+  tasks = tasks.map(t => t.id == id ? {...t, status: STATUS_NEXT[t.status||'todo']} : t);
+  save();
+}
+
+function copyTitle(id, btn) {
+  const t = tasks.find(t => t.id == id); if (!t) return;
+  navigator.clipboard.writeText(t.title).then(() => {
+    btn.classList.add('copied');
+    setTimeout(() => btn.classList.remove('copied'), 1500);
+  });
+}
+
+function remove(id) { if (confirm('削除しますか？')) { tasks = tasks.filter(t => t.id != id); save(); } }
+
+function setFilter(f, el) {
+  filter = f;
+  document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  render();
+}
+
+function dueInfo(due) {
+  if (!due) return null;
+  const dt = new Date(due + 'T00:00:00');
+  const today = new Date(); today.setHours(0,0,0,0);
+  const diff = Math.ceil((dt - today) / 86400000);
+  const label = `${dt.getMonth()+1}/${dt.getDate()}`;
+  if (diff < 0) return { label: label + ' 期限切れ', cls: 'overdue' };
+  if (diff === 0) return { label: label + ' 今日', cls: 'today' };
+  if (diff === 1) return { label: label + ' 明日', cls: 'tomorrow' };
+  return { label, cls: '' };
+}
+
+function render() {
+  const counts = { todo:0, inprogress:0, done:0 };
+  tasks.forEach(t => counts[t.status||'todo']++);
+  document.getElementById('cnt-all').textContent        = tasks.length;
+  document.getElementById('cnt-todo').textContent       = counts.todo;
+  document.getElementById('cnt-inprogress').textContent = counts.inprogress;
+  document.getElementById('cnt-done').textContent       = counts.done;
+  document.getElementById('badge').textContent = `処理中 ${counts.inprogress} / 未着手 ${counts.todo}`;
+
+  const filtered = filter === 'all' ? tasks : tasks.filter(t => (t.status||'todo') === filter);
+  const sorted   = [...filtered].sort((a,b) => STATUS_ORDER.indexOf(a.status||'todo') - STATUS_ORDER.indexOf(b.status||'todo'));
+
+  const el = document.getElementById('tasks');
+  if (!sorted.length) { el.innerHTML = '<div class="empty">タスクがありません 🎉</div>'; return; }
+
+  el.innerHTML = sorted.map((t, i) => {
+    const st      = t.status || 'todo';
+    const cardCls = st === 'todo' ? 'card-todo' : st === 'inprogress' ? 'card-inprogress' : 'card-done-style';
+    const sbCls   = `sb-${st}`;
+    const priCls  = t.pri === '高' ? 'pri-high' : t.pri === '中' ? 'pri-mid' : 'pri-low';
+    const due     = dueInfo(t.due);
+    const hasLink = t.note && (t.note.startsWith('http://') || t.note.startsWith('https://'));
+    return `
+    <div class="card ${cardCls} ${i%2===0?'even':'odd'} ${st==='done'?'done-card':''}"
+      draggable="true" data-id="${t.id}"
+      ondragstart="onDragStart(event,'${t.id}')"
+      ondragenter="onDragEnter(event,'${t.id}')"
+      ondragover="event.preventDefault()"
+      ondragend="onDragEnd()">
+      <div class="card-inner">
+        <button class="status-btn status-${st}" onclick="cycleStatus(${t.id})" title="ステータス変更">${STATUS_ICON[st]}</button>
+        <div class="card-body">
+          <div class="card-title ${st==='done'?'done':''}">${escHtml(t.title)}</div>
+          ${hasLink ? `<a class="card-link" href="${escHtml(t.note)}" target="_blank" rel="noopener">🔗 ${escHtml(t.note)}</a>` : ''}
+          <div class="card-meta">
+            <span class="status-badge ${sbCls}">${STATUS_LABEL[st]}</span>
+            <span class="pri ${priCls}">${t.pri}</span>
+            ${due ? `<span class="due ${due.cls}"><span class="cal-icon">◷</span> ${due.label}</span>` : ''}
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn-icon btn-copy" onclick="copyTitle(${t.id}, this)" title="タイトルをコピー">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+          ${hasLink ? `<button class="btn-icon btn-link-btn" onclick="window.open('${escHtml(t.note)}','_blank')" title="リンクを開く">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          </button>` : ''}
+          <button class="btn-icon" onclick="startEdit(${t.id})" title="編集">✏️</button>
+          <button class="btn-icon btn-del" onclick="remove(${t.id})" title="削除">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function onDragStart(e, id) { dragId = id; setTimeout(() => { const el = document.querySelector(`[data-id="${id}"]`); if(el) el.classList.add('dragging'); }, 0); }
+function onDragEnter(e, id) {
+  if (id == dragId) return;
+  const arr = [...tasks];
+  const fi = arr.findIndex(t => t.id == dragId), ti = arr.findIndex(t => t.id == id);
+  if (fi < 0 || ti < 0) return;
+  const [m] = arr.splice(fi, 1); arr.splice(ti, 0, m);
+  tasks = arr; render();
+}
+function onDragEnd() { dragId = null; save(); }
+
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(tasks, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `todo_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importJSON(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!Array.isArray(data)) throw new Error();
+      tasks = data; save();
+      alert(`${tasks.length}件のタスクをインポートしました！`);
+    } catch { alert('JSONファイルの形式が正しくありません。'); }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// --- Pomodoro ---
+const POMO_SEC = 30 * 60;
+let pomoTimer    = null;
+let pomoStartAt  = null;
+let pomoRemain   = POMO_SEC;
+
+function pomoStart() {
+  if (pomoTimer) return;
+  pomoStartAt = Date.now() - (POMO_SEC - pomoRemain) * 1000;
+  document.getElementById('btn-pomo-start').style.display = 'none';
+  document.getElementById('btn-pomo-stop').style.display  = '';
+  document.getElementById('pomo-label').textContent = '集中中...';
+  document.getElementById('pomo-display').classList.add('running');
+  pomoTimer = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - pomoStartAt) / 1000);
+    pomoRemain = Math.max(POMO_SEC - elapsed, 0);
+    pomoUpdateUI();
+    if (pomoRemain <= 0) {
+      clearInterval(pomoTimer); pomoTimer = null;
+      document.getElementById('pomo-display').classList.remove('running');
+      document.getElementById('pomo-display').classList.add('finished');
+      document.getElementById('pomo-label').textContent = '完了！';
+      document.getElementById('btn-pomo-start').style.display = '';
+      document.getElementById('btn-pomo-start').textContent   = '▶ もう一度';
+      document.getElementById('btn-pomo-stop').style.display  = 'none';
+      alert('⏰ 30分経過！お疲れさまでした！');
+    }
+  }, 500);
+}
+
+function pomoReset() {
+  clearInterval(pomoTimer); pomoTimer = null;
+  pomoRemain = POMO_SEC; pomoStartAt = null;
+  pomoUpdateUI();
+  document.getElementById('pomo-display').className = 'pomo-time';
+  document.getElementById('pomo-label').textContent  = '集中タイマー';
+  document.getElementById('btn-pomo-start').style.display = '';
+  document.getElementById('btn-pomo-start').textContent   = '▶ 開始';
+  document.getElementById('btn-pomo-stop').style.display  = 'none';
+}
+
+function pomoUpdateUI() {
+  const m = String(Math.floor(pomoRemain / 60)).padStart(2, '0');
+  const s = String(pomoRemain % 60).padStart(2, '0');
+  document.getElementById('pomo-display').textContent = `${m}:${s}`;
+  const arc = document.getElementById('pomo-arc');
+  const pct = pomoRemain / POMO_SEC;
+  arc.style.strokeDashoffset = 113 * (1 - pct);
+  arc.style.stroke = pomoRemain <= 60 ? '#f59e0b' : '#2563eb';
+}
+
+document.getElementById('inp-title').addEventListener('keydown', e => { if (e.key === 'Enter') addOrUpdate(); });
+render();
+</script>
+</body>
+</html>
