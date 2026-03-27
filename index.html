@@ -6,6 +6,15 @@
 <title>ToDoリスト</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='4' fill='%23212121'/><rect x='6' y='4' width='20' height='24' rx='2' fill='%231e2a3a' stroke='%233b82f6' stroke-width='1.5'/><rect x='11' y='2' width='10' height='5' rx='2' fill='%233b82f6'/><line x1='10' y1='13' x2='22' y2='13' stroke='%2360a5fa' stroke-width='1.5' stroke-linecap='round'/><line x1='10' y1='17' x2='22' y2='17' stroke='%2360a5fa' stroke-width='1.5' stroke-linecap='round'/><line x1='10' y1='21' x2='18' y2='21' stroke='%2360a5fa' stroke-width='1.5' stroke-linecap='round'/></svg>">
 <style>
+  #pw-overlay { position: fixed; inset: 0; background: #212121; display: flex; align-items: center; justify-content: center; z-index: 9999; }
+  #pw-box { background: #1e2a3a; border: 1px solid #2d4a6a; border-radius: 10px; padding: 32px 28px; width: 300px; text-align: center; }
+  #pw-box h2 { color: #f1f5f9; font-size: 1rem; margin-bottom: 20px; }
+  #pw-input { width: 100%; background: #162032; border: 1px solid #2d4a6a; border-radius: 6px; padding: 9px 12px; font-size: 0.9rem; color: #e2e8f0; outline: none; margin-bottom: 12px; font-family: inherit; }
+  #pw-input:focus { border-color: #3b82f6; }
+  #pw-btn { width: 100%; background: #2563eb; color: white; border: none; border-radius: 6px; padding: 9px; font-size: 0.9rem; font-weight: bold; cursor: pointer; font-family: inherit; }
+  #pw-btn:hover { background: #1d4ed8; }
+  #pw-error { color: #f87171; font-size: 0.8rem; margin-top: 10px; display: none; }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: #212121; font-family: 'Hiragino Sans', 'Meiryo', sans-serif; min-height: 100vh; padding: 20px; color: #e2e8f0; }
   .container { max-width: 480px; margin: 0 auto; }
@@ -111,6 +120,39 @@
 </style>
 </head>
 <body>
+<div id="pw-overlay">
+  <div id="pw-box">
+    <h2>🔒 パスワードを入力</h2>
+    <input type="password" id="pw-input" placeholder="パスワード" autofocus />
+    <button id="pw-btn" onclick="checkPw()">ログイン</button>
+    <div id="pw-error">パスワードが違います</div>
+  </div>
+</div>
+<script>
+  (function() {
+    if (sessionStorage.getItem('auth') === '1') {
+      document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('pw-overlay').style.display = 'none';
+      });
+    }
+  })();
+  function checkPw() {
+    const v = document.getElementById('pw-input').value;
+    if (v === 'unit1983') {
+      sessionStorage.setItem('auth', '1');
+      document.getElementById('pw-overlay').style.display = 'none';
+    } else {
+      document.getElementById('pw-error').style.display = 'block';
+      document.getElementById('pw-input').value = '';
+      document.getElementById('pw-input').focus();
+    }
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('pw-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') checkPw();
+    });
+  });
+</script>
 <div class="container">
   <h1>ToDoリスト <span class="badge" id="badge">0件</span></h1>
 
